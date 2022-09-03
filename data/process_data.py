@@ -1,16 +1,26 @@
 import sys
-
+import numpy as np
+import pandas as pd
+from sqlalchemy import create_engine
 
 def load_data(messages_filepath, categories_filepath):
-    pass
-
+    messages = pd.read_csv(messages_filepath)
+    categories = pd.read_csv(categories_filepath)
+    df = messages.merge(categories, how='inner', on='id')
+    return df
 
 def clean_data(df):
-    pass
+    categories = df['categories'].str.split(';', expand=True)
+    categories.columns = categories.iloc[0].apply(lambda x: x[:-2])
+    for column in categories:
+        categories[column] = categories[column].astype("string").str[-1].astype(int)
+    df = pd.concat([df.drop(columns=['categories']), categories], axis=1)
+    return df.drop_duplicates()
 
 
 def save_data(df, database_filename):
-    pass  
+    engine = create_engine(database_filename)
+    df.to_sql('InsertTableName', engine, index=False)
 
 
 def main():
