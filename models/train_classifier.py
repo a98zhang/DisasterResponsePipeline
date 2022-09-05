@@ -1,24 +1,72 @@
 import sys
+import nltk
+nltk.download(['punkt', 'wordnet','omw-1.4'])
 
+import re
+from random import random
+import numpy as np
+import pandas as pd
+from sqlalchemy import create_engine
+
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+
+from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.pipeline import Pipeline, FeatureUnion
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer 
+from sklearn.multioutput import MultiOutputClassifier 
+
+import pickle
 
 def load_data(database_filepath):
-    pass
-
+    engine = create_engine(database_filepath)
+    df = pd.read_sql_table('DisasterResponse', engine)
+    X = df['message']   # id, message, original, genre
+    Y = df.iloc[:, 4:]
+    return X, Y
 
 def tokenize(text):
-    pass
+    text = re.sub(r"[^a-zA-Z0-9]", " ", text)
+    tokens = word_tokenize(text)
+    lemmatizer = WordNetLemmatizer()    #considering removing stop words
+    return [lemmatizer.lemmatize(tok).lower().strip() for tok in tokens]
 
 
 def build_model():
-    pass
+    pipeline = Pipeline([
+        ('textpipeline', Pipeline([
+            ('vect', CountVectorizer(tokenizer=tokenize)),
+            ('Tfidf', TfidfTransformer())
+        ])),
+        ('clf', MultiOutputClassifier(RandomForestClassifier()))
+    ])
+
+    parameters = {
+        'textpipeline__vect__ngram_range': ((1, 1), (1, 2)),
+        'clf__estimator__n_estimators': [50, 100, 200],
+        'clf__estimator__min_samples_split': [2, 3, 4]
+    }
+
+    cv = GridSearchCV(pipeline, parameters)
+
+    return cv
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
-    pass
+    
+    Y_pred = model.predict(X_test)
+
+    reports = dict()
+    for i, cat in enumerate(category_names):
+        reports[cat] = classification_report(Y_test[cat], Y_pred[:, i], zero_division=0, output_dict=True)
+    accuracies = [reports[report]['accuracy'] for report in reports]
+    print(np.array(accuracies).mean())
 
 
 def save_model(model, model_filepath):
-    pass
+    pickle.dump(model, open(model_filepath, 'wb'))
 
 
 def main():
