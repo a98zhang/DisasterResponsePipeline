@@ -1,4 +1,5 @@
 import sys
+import os
 import nltk
 nltk.download(['punkt', 'wordnet','omw-1.4'])
 
@@ -21,11 +22,12 @@ from sklearn.multioutput import MultiOutputClassifier
 import pickle
 
 def load_data(database_filepath):
-    engine = create_engine(database_filepath)
-    df = pd.read_sql_table('DisasterResponse', engine)
+    engine = create_engine(''.join(['sqlite:///', os.path.abspath(database_filepath)]))
+    df = pd.read_sql_table('data', engine)
     X = df['message']   # id, message, original, genre
     Y = df.iloc[:, 4:]
-    return X, Y
+    category_names = df.columns[4:]
+    return X, Y, category_names
 
 def tokenize(text):
     text = re.sub(r"[^a-zA-Z0-9]", " ", text)
@@ -44,10 +46,17 @@ def build_model():
     ])
 
     parameters = {
-        'textpipeline__vect__ngram_range': ((1, 1), (1, 2)),
-        'clf__estimator__n_estimators': [50, 100, 200],
+        #'textpipeline__vect__ngram_range': ((1, 1), (1, 2)),
+        #'clf__estimator__n_estimators': [50, 100, 200],
         'clf__estimator__min_samples_split': [2, 3, 4]
     }
+
+    '''
+    cv.best_params_
+    {'clf__estimator__min_samples_split': 2,
+    'clf__estimator__n_estimators': 100,
+    'textpipeline__vect__ngram_range': (1, 2)}
+    '''
 
     cv = GridSearchCV(pipeline, parameters)
 

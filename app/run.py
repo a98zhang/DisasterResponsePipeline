@@ -1,6 +1,8 @@
+import os
 import json
 import plotly
 import pandas as pd
+import joblib
 
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
@@ -8,7 +10,6 @@ from nltk.tokenize import word_tokenize
 from flask import Flask
 from flask import render_template, request, jsonify
 from plotly.graph_objs import Bar
-from sklearn.externals import joblib
 from sqlalchemy import create_engine
 
 
@@ -26,8 +27,11 @@ def tokenize(text):
     return clean_tokens
 
 # load data
-engine = create_engine('sqlite:///../data/DisasterResponse.db')
-df = pd.read_sql_table('DisasterResponse', engine)
+database_filepath = 'data/DisasterResponse.db'
+file_dir = os.path.abspath(os.path.dirname(__file__))
+db_dir = os.path.join(file_dir[:-3], 'data/DisasterResponse.db')
+engine = create_engine(''.join(['sqlite:///', db_dir]))
+df = pd.read_sql_table('data', engine)
 
 # load model
 model = joblib.load("../models/classifier.pkl")
@@ -93,6 +97,7 @@ def go():
 
 
 def main():
+    
     app.run(host='0.0.0.0', port=3000, debug=True)
 
 

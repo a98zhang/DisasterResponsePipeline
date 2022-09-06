@@ -1,4 +1,5 @@
 import sys
+import os
 import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine
@@ -19,8 +20,8 @@ def clean_data(df):
 
 
 def save_data(df, database_filename):
-    engine = create_engine(database_filename)
-    df.to_sql('InsertTableName', engine, index=False)
+    engine = create_engine(''.join(['sqlite:///', os.path.abspath(database_filename)]))
+    df.to_sql('data', con=engine, if_exists='replace', index=False)
 
 
 def main():
