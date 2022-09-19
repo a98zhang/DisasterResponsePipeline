@@ -1,3 +1,4 @@
+# import libraries
 import sys
 import os
 import nltk
@@ -22,6 +23,17 @@ from sklearn.multioutput import MultiOutputClassifier
 import pickle
 
 def load_data(database_filepath):
+    '''
+    Load cleaned data from the database and return tranining data
+            
+        Parameters:
+            database_filepath (str): file path of the database from which data is loading
+
+        Returns:
+            X (dataframe): feature variables
+            Y (dataframe): target variables 
+            category_names (list):  target names
+    '''
     engine = create_engine(''.join(['sqlite:///', os.path.abspath(database_filepath)]))
     df = pd.read_sql_table('data', engine)
     X = df['message']   # id, message, original, genre
@@ -30,6 +42,15 @@ def load_data(database_filepath):
     return X, Y, category_names
 
 def tokenize(text):
+    '''
+    A tokenizer that process the original text data into tokens
+            
+        Parameters:
+            text (str): the original text string
+
+        Returns:
+            (list): a list of tokens
+    '''
     text = re.sub(r"[^a-zA-Z0-9]", " ", text)
     tokens = word_tokenize(text)
     lemmatizer = WordNetLemmatizer()    #considering removing stop words
@@ -37,6 +58,13 @@ def tokenize(text):
 
 
 def build_model():
+    '''
+    Builds a pipeline that processes text and then performs multi-output classification
+            
+        Parameters:
+        Returns:
+            cv (model): returns a model that uses grid search to optimize parameters
+    '''
     pipeline = Pipeline([
         ('textpipeline', Pipeline([
             ('vect', CountVectorizer(tokenizer=tokenize)),
@@ -64,7 +92,16 @@ def build_model():
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
-    
+    '''
+    Evaluate the model and print out f1 score, precision and recall for the test set
+            
+        Parameters:
+            model (model): trained model
+            X_test (dataframe): feature variables of the test data
+            Y_test (dataframe): target results of the test data
+            category_names (list): target names
+        Returns:  
+    '''
     Y_pred = model.predict(X_test)
 
     reports = dict()
@@ -75,6 +112,15 @@ def evaluate_model(model, X_test, Y_test, category_names):
 
 
 def save_model(model, model_filepath):
+    '''
+    Export the model as a pickle file
+            
+        Parameters:
+            model (cv): file path of the message data
+            model_filepath (str): file path to which the model is exported 
+
+        Returns:
+    '''
     pickle.dump(model, open(model_filepath, 'wb'))
 
 
